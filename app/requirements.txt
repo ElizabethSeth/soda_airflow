@@ -7,3 +7,4 @@ apache-airflow-providers-postgres
 pandas
 requests
 psycopg2-binary
+apache-airflow
