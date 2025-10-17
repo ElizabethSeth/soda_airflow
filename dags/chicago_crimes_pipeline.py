@@ -16,15 +16,14 @@ API_URL = "https://data.cityofchicago.org/resource/ijzp-q8t2.json"
 
 default_args = {
     "owner": "airflow",
-    "retries": 2,
+    "retries": 0,
     "retry_delay": timedelta(minutes=5),
 }
 
 with DAG(
     dag_id="chicago_crimes_pipeline",
     default_args=default_args,
-    start_date=datetime(2024, 1, 1),
-    schedule_interval="@daily",
+    schedule="@daily",
     catchup=False,
     tags=["chicago", "soda", "postgres"],
 ) as dag:
@@ -37,7 +36,6 @@ with DAG(
         data = r.json()
         df = pd.DataFrame(data)
 
-        # Keep a focused set of columns; create them if missing
         wanted = [
             "id", "case_number", "date", "primary_type", "description",
             "location_description", "arrest", "domestic", "district", "ward",
@@ -71,24 +69,20 @@ with DAG(
 
         raw = pd.read_sql(f'SELECT * FROM "{RAW_TABLE}"', engine)
 
-        # Type casting
         raw["date"] = pd.to_datetime(raw["date"], errors="coerce", utc=True)
         for col in ["district", "ward", "community_area", "year"]:
             raw[col] = pd.to_numeric(raw[col], errors="coerce").astype("Int64")
         for col in ["latitude", "longitude"]:
             raw[col] = pd.to_numeric(raw[col], errors="coerce")
 
-        # Basic cleaning
         clean = (
             raw.dropna(subset=["id"])
                .drop_duplicates(subset=["id"])
                .query("year.isna() == False and year >= 2015")
         )
 
-        # Save clean table
         clean.to_sql(CLEAN_TABLE, engine, index=False, if_exists="replace")
 
-        # Small aggregation: daily counts
         daily = (
             clean.assign(day=clean["date"].dt.date)
                  .groupby("day", dropna=False)

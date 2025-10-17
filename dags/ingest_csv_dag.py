@@ -18,7 +18,7 @@ default_args = {
 
 with DAG("ingest_sports_data",
          default_args=default_args,
-         schedule_interval='@hourly',
+         schedule ='@hourly',
          catchup=False) as dag:
 
     ingest_task = PythonOperator(
