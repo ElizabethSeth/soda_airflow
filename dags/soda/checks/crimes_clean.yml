@@ -1,0 +1,14 @@
+checks for crimes_clean:
+  - row_count > 0
+  - missing_percent([id, date, primary_type]) = 0
+  - duplicate_count(id) = 0
+  - freshness:
+      column: date
+      max_diff_hours: 48
+  - validity:
+      name: latitude_longitude_within_world
+      tests:
+        - valid_min(latitude) >= -90
+        - valid_max(latitude) <= 90
+        - valid_min(longitude) >= -180
+        - valid_max(longitude) <= 180

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sports Data Explorer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .scrollable-table {
+      max-height: 500px;
+      overflow: auto;
+    }
+    .custom-table th, .custom-table td {
+      white-space: nowrap;
+    }
+    .tag {
+      display: inline-block;
+      padding: 4px 10px;
+      margin: 2px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .tag-blue { background-color: #d1f0ff; }
+    .tag-yellow { background-color: #ffe5a1; }
+    .tag-gray { background-color: #e0e0e0; }
+  </style>
+</head>
+<body class="bg-light">
+  <div class="container py-4">
+    <h2 class="text-primary fw-bold mb-4">🏅 Analytics Data Explorer</h2>
+
+    <form method="POST" enctype="multipart/form-data" class="mb-3">
+      <div class="input-group">
+        <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+        <button type="submit" class="btn btn-outline-primary">Upload CSV</button>
+      </div>
+    </form>
+
+    {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    {% if table_data %}
+      <div class="mb-3">
+        <h5 class="text-success">✅ Data from table: <strong>{{ table_name }}</strong></h5>
+        <p class="text-muted">📊 Showing {{ row_count }} rows and {{ col_count }} columns.</p>
+      </div>
+
+      <div class="scrollable-table mb-4">
+        <table class="table table-bordered table-striped custom-table">
+          <thead>
+            <tr>
+              {% for col in dtypes.keys() %}
+                <th>{{ col }}</th>
+              {% endfor %}
+            </tr>
+            <tr>
+              {% for dtype in dtypes.values() %}
+                <th class="small text-muted">{{ dtype }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>{{ table_data|safe }}</tbody>
+        </table>
+      </div>
+
+      <hr>
+      <h4 class="text-center text-dark">⚙️ ETL Process</h4>
+
+      <div class="accordion mb-3" id="etlAccordion">
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUnique">
+              🔍 Unique Values Per Column
+            </button>
+          </h2>
+          <div id="collapseUnique" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              {% for col, val in unique_info.items() %}
+                <span class="tag tag-gray">{{ col }}: {{ val }} unique</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNulls">
+              ❗ Null Count Preview
+            </button>
+          </h2>
+          <div id="collapseNulls" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              {% for col, val in null_counts.items() if val > 0 %}
+                <span class="tag tag-yellow">{{ col }}: {{ val }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExport">
+              📁 Export & Clean Options
+            </button>
+          </h2>
+          <div id="collapseExport" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <form method="POST" action="/drop_empty_columns">
+                <button class="btn btn-danger mb-2">🗑 Drop Empty Columns</button>
+              </form>
+              <form method="POST" action="/export_csv">
+                <button class="btn btn-outline-secondary mb-2">💾 Export as CSV</button>
+              </form>
+              <form method="POST" action="/export_parquet">
+                <button class="btn btn-outline-secondary mb-2">🪵 Export as Parquet</button>
+              </form>
+              <form method="POST" action="/export_txt">
+                <button class="btn btn-outline-secondary">📄 Export as TXT</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <hr>
+    <div class="mb-3">
+      <h5 class="text-info">🧮 SQL Sandbox</h5>
+      <form method="POST" action="/query">
+        <textarea name="sql_query" class="form-control mb-2" rows="4" placeholder="SELECT * FROM {{ table_name }} LIMIT 10;">SELECT * FROM {{ table_name }} LIMIT 10;</textarea>
+        <button class="btn btn-success">Run Query</button>
+        <button type="button" class="btn btn-outline-info float-end" data-bs-toggle="modal" data-bs-target="#cheatSheetModal">📘 SQL Cheat Sheet</button>
+      </form>
+    </div>
+
+    {% if query_results %}
+      <div class="scrollable-table">
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              {% for col in columns %}
+                <th>{{ col }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in query_results %}
+              <tr>
+                {% for cell in row %}
+                  <td>{{ cell }}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+
+    <!-- SQL Cheat Sheet Modal -->
+    <div class="modal fade" id="cheatSheetModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">SQL Cheat Sheet</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <ul>
+              <li><code>SELECT * FROM table_name;</code></li>
+              <li><code>SELECT col1, col2 FROM table_name WHERE condition;</code></li>
+              <li><code>SELECT COUNT(*) FROM table_name;</code></li>
+              <li><code>SELECT col, COUNT(*) FROM table GROUP BY col;</code></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
+
+
+
+
+

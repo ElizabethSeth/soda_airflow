@@ -1,0 +1,12 @@
+checks for raw_chicago_crimes:
+  - row_count > 0
+  - schema:
+      fail:
+        when required column missing:
+          - id
+          - date
+          - primary_type
+  - missing_count(id) = 0
+  - duplicate_count(id) = 0
+  - invalid_percent(primary_type) < 5 %:
+      valid_values: ${PRIMARY_TYPES?:}  

@@ -1,0 +1,9 @@
+flask
+psycopg2-binary
+sqlalchemy
+pandas
+soda-core==3.*
+apache-airflow-providers-postgres
+pandas
+requests
+psycopg2-binary
