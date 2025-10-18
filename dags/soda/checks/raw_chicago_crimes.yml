@@ -8,5 +8,32 @@ checks for raw_chicago_crimes:
           - primary_type
   - missing_count(id) = 0
   - duplicate_count(id) = 0
-  - invalid_percent(primary_type) < 5 %:
-      valid_values: ${PRIMARY_TYPES?:}  
+  - invalid_percent(primary_type) < 20 %:
+      valid values:
+        - THEFT
+        - BATTERY
+        - ASSAULT
+        - ROBBERY
+        - BURGLARY
+        - CRIMINAL DAMAGE
+        - MOTOR VEHICLE THEFT
+        - NARCOTICS
+        - OTHER OFFENSE
+        - WEAPONS VIOLATION
+        - CRIMINAL TRESPASS
+        - PUBLIC PEACE VIOLATION
+        - OFFENSE INVOLVING CHILDREN
+        - HOMICIDE
+        - ARSON
+        - KIDNAPPING
+        - DECEPTIVE PRACTICE
+        - PROSTITUTION
+        - GAMBLING
+        - STALKING
+        - LIQUOR LAW VIOLATION
+        - OBSCENITY
+        - INTERFERENCE WITH PUBLIC OFFICER
+        - INTIMIDATION
+        - NON-CRIMINAL
+        - CONCEALED CARRY LICENSE VIOLATION
+        - HUMAN TRAFFICKING

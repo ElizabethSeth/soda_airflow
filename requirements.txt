@@ -8,3 +8,6 @@ pandas
 requests
 psycopg2-binary
 apache-airflow
+setuptools
+soda-core>=3.3.0
+soda-core-postgres>=3.3.0

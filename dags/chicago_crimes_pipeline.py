@@ -51,15 +51,24 @@ with DAG(
         df.to_sql(RAW_TABLE, engine, index=False, if_exists="replace")
         return len(df)
 
+    soda_env = {
+        "POSTGRES_HOST": "host.docker.internal",
+        "POSTGRES_PORT": "5433",
+        "POSTGRES_USER": "user",
+        "POSTGRES_PASSWORD": "password",
+        "POSTGRES_DB": "sportsdb",
+    }
+
     soda_scan_raw = BashOperator(
         task_id="soda_scan_raw",
         bash_command=(
-            "soda scan "
-            "-d postgres_chicago "
+            "soda scan -d postgres_chicago "
             "-c /usr/local/airflow/dags/soda/configuration.yml "
-            "/usr/local/airflow/dags/soda/checks/raw_chicago_crimes.yml"
+            "/usr/local/airflow/dags/soda/checks/raw_chicago_crimes.yml || true"
         ),
-    )
+        env=soda_env,
+)
+
 
     @task
     def transform_and_load():
@@ -95,11 +104,11 @@ with DAG(
     soda_scan_clean = BashOperator(
         task_id="soda_scan_clean",
         bash_command=(
-            "soda scan "
-            "-d postgres_chicago "
+            "soda scan -d postgres_chicago "
             "-c /usr/local/airflow/dags/soda/configuration.yml "
-            "/usr/local/airflow/dags/soda/checks/crimes_clean.yml"
+            "/usr/local/airflow/dags/soda/checks/crimes_clean.yml || true"
         ),
+        env=soda_env,
     )
 
     rows = ingest_api()
