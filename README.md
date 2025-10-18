@@ -1,45 +1,106 @@
-Overview
-========
+# 🧠 Chicago Crimes Data Pipeline – Airflow + Soda + PostgreSQL
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+## 📋 Project Overview
+This project implements a **complete data pipeline** using **Apache Airflow** (via Astro CLI), **Soda Core** for data quality validation, and **PostgreSQL** for storage.  
+It automates the process of **ingesting**, **validating**, **transforming**, and **loading** public crime data from the **City of Chicago API**.
 
-Project Contents
-================
+---
 
-Your Astro project contains the following files and folders:
+## 🚀 Architecture
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes one example DAG:
-    - `example_astronauts`: This DAG shows a simple ETL pipeline example that queries the list of astronauts currently in space from the Open Notify API and prints a statement for each astronaut. The DAG uses the TaskFlow API to define tasks in Python, and dynamic task mapping to dynamically print a statement for each astronaut. For more on how this DAG works, see our [Getting started tutorial](https://www.astronomer.io/docs/learn/get-started-with-airflow).
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
+### 🧰 Tools & Technologies
 
-Deploy Your Project Locally
-===========================
+| Tool | Role |
+|------|------|
+| 🌀 **Airflow (Astro CLI)** | Orchestrates ETL tasks |
+| 🧪 **Soda Core** | Validates data quality before and after transformation |
+| 🗄️ **PostgreSQL** | Stores raw and cleaned datasets |
+| 🌐 **Public API (Chicago Crimes)** | Data source |
 
-Start Airflow on your local machine by running 'astro dev start'.
+---
 
-This command will spin up five Docker containers on your machine, each for a different Airflow component:
+## 🏗️ Pipeline Structure
 
-- Postgres: Airflow's Metadata Database
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-- DAG Processor: The Airflow component responsible for parsing DAGs
-- API Server: The Airflow component responsible for serving the Airflow UI and API
-- Triggerer: The Airflow component responsible for triggering deferred tasks
+### DAG: `chicago_crimes_pipeline`
 
-When all five containers are ready the command will open the browser to the Airflow UI at http://localhost:8080/. You should also be able to access your Postgres Database at 'localhost:5432/postgres' with username 'postgres' and password 'postgres'.
+| Step | Task ID | Description |
+|------|----------|-------------|
+| 1️⃣ | `ingest_api` | Fetches data from the **Chicago Crimes API** and stores it in the PostgreSQL raw table |
+| 2️⃣ | `soda_scan_raw` | Performs Soda data quality checks on **raw data** |
+| 3️⃣ | `transform_and_load` | Cleans and transforms data before loading into the cleaned table |
+| 4️⃣ | `soda_scan_clean` | Runs final Soda quality checks on **transformed data** |
+| 5️⃣ | *(optional)* `load_to_postgres` | Final load of validated data into PostgreSQL for analytics |
 
-Note: If you already have either of the above ports allocated, you can either [stop your existing Docker containers or change the port](https://www.astronomer.io/docs/astro/cli/troubleshoot-locally#ports-are-not-available-for-my-local-airflow-webserver).
+---
 
-Deploy Your Project to Astronomer
-=================================
+## 📂 Project Structure
 
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
+app_docker/
+├── dags/
+│ ├── chicago_crimes_pipeline.py # Main Airflow DAG
+│ ├── soda/
+│ │ ├── configuration.yml # Soda configuration
+│ │ └── checks/
+│ │ ├── raw_chicago_crimes.yml # Soda checks for raw data
+│ │ └── crimes_clean.yml # Soda checks for cleaned data
+├── data/ # (optional) Local storage
+├── docker-compose.override.yml # Custom Docker setup
+├── airflow_settings.yaml # Airflow connection settings
+├── Dockerfile # Custom Airflow image build
+├── requirements.txt # Python dependencies
+└── README.md # Documentation
 
-Contact
-=======
 
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+### 1️⃣ Start the environment
+astro dev start
+Airflow UI → http://localhost:8080
+
+PostgreSQL → localhost:5432
+
+Default credentials → postgres/postgres
+
+### 2️⃣ Verify running containers
+astro dev ps
+
+### 3️⃣ Run the pipeline manually
+
+Go to the Airflow UI and trigger the DAG:
+
+chicago_crimes_pipeline
+
+### 4️⃣ View Soda results
+
+Open the logs of soda_scan_raw and soda_scan_clean to view data quality validation summaries.
+
+## ✅ Data Quality Checks (Soda)
+raw_chicago_crimes.yml
+checks for raw_chicago_crimes:
+  - row_count > 0
+  - missing_count(id) = 0
+  - duplicate_count(id) = 0
+  - invalid_percent(primary_type) < 20 %:
+      valid values:
+        - THEFT
+        - ASSAULT
+        - BATTERY
+        - ROBBERY
+
+crimes_clean.yml
+checks for crimes_clean:
+  - row_count > 0
+  - missing_count(id) = 0
+  - duplicate_count(id) = 0
+  - freshness(ts) < 48h
+  - invalid_percent(latitude) = 0:
+      valid min: -90
+      valid max: 90
+  - invalid_percent(longitude) = 0:
+      valid min: -180
+      valid max: 180
+
+### 📊 Results
+
+✅ Fully automated end-to-end pipeline
+✅ Soda quality checks before and after transformation
+✅ Seamless integration between Airflow, PostgreSQL, and Soda
+✅ Ready for extension to other public datasets
