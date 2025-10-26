@@ -29,7 +29,7 @@ It automates the process of **ingesting**, **validating**, **transforming**, and
 | 2️⃣ | `soda_scan_raw` | Performs Soda data quality checks on **raw data** |
 | 3️⃣ | `transform_and_load` | Cleans and transforms data before loading into the cleaned table |
 | 4️⃣ | `soda_scan_clean` | Runs final Soda quality checks on **transformed data** |
-| 5️⃣ | *(optional)* `load_to_postgres` | Final load of validated data into PostgreSQL for analytics |
+| 5️⃣ | `load_to_postgres` | Final load of validated data into PostgreSQL for analytics |
 
 ---
 
